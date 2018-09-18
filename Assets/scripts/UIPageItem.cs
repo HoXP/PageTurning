@@ -7,7 +7,7 @@ public class UIPageItem : MonoBehaviour
 
     private void Awake()
     {
-        img = transform.Find("content/img").GetComponent<RawImage>();
+        img = transform.Find("img").GetComponent<RawImage>();
     }
     internal void Flush(Texture tex)
     {

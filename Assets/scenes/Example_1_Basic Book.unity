@@ -192,8 +192,8 @@ Transform:
 RectTransform:
   m_PrefabParentObject: {fileID: 224745132735289590, guid: a0ed55f9204313f4b98acf4f3955abdb,
     type: 2}
-  m_PrefabInternal: {fileID: 852384031}
---- !u!1001 &852384031
+  m_PrefabInternal: {fileID: 1359868309}
+--- !u!1001 &1359868309
 Prefab:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -289,6 +289,11 @@ Prefab:
         type: 2}
       propertyPath: m_Pivot.y
       value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 114484459490425004, guid: a0ed55f9204313f4b98acf4f3955abdb,
+        type: 2}
+      propertyPath: isLandScape
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: a0ed55f9204313f4b98acf4f3955abdb, type: 2}

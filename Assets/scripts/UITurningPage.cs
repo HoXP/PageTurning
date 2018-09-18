@@ -16,7 +16,6 @@ class UITurningPage : MonoBehaviour
 
     #region UI
     private RectTransform _bookRect = null;
-    private RectTransform _turningPage = null;
     private RectTransform CurrMask = null;
     private RectTransform NextMask = null;
 
@@ -98,7 +97,9 @@ class UITurningPage : MonoBehaviour
     #region Sys
     private void Awake()
     {
-        EventTrigger et = transform.Find("Adapter/uiTurningPage").gameObject.AddComponent<EventTrigger>();
+        _bookRect = transform.Find("Adapter/uiTurningPage").GetComponent<RectTransform>();
+        #region EventTrigger
+        EventTrigger et = _bookRect.gameObject.AddComponent<EventTrigger>();
         EventTrigger.Entry entry = null;
         entry = new EventTrigger.Entry();
         entry.eventID = EventTriggerType.BeginDrag;
@@ -112,15 +113,14 @@ class UITurningPage : MonoBehaviour
         entry.eventID = EventTriggerType.EndDrag;
         entry.callback.AddListener(OnEndDragBook);
         et.triggers.Add(entry);
+        #endregion
 
-        _bookRect = gameObject.GetComponent<RectTransform>();
-        _turningPage = transform.Find("Adapter/uiTurningPage").GetComponent<RectTransform>();
-        CurrMask = transform.Find("Adapter/uiTurningPage/maskC").GetComponent<RectTransform>();
-        NextMask = transform.Find("Adapter/uiTurningPage/maskN").GetComponent<RectTransform>();
+        CurrMask = _bookRect.Find("maskC").GetComponent<RectTransform>();
+        NextMask = _bookRect.Find("maskN").GetComponent<RectTransform>();
         CurrMask.pivot = new Vector2(1, 0.5f);
         NextMask.pivot = new Vector2(0, 0.5f);
 
-        _tplPage = transform.Find("Adapter/uiTurningPage/" + lclTplPage).gameObject.AddComponent<UIPageItem>(); ;
+        _tplPage = _bookRect.Find(lclTplPage).gameObject.AddComponent<UIPageItem>(); ;
         _tplPage.gameObject.SetActive(false);
 
         CurrPage = SetPage("curr", PageType.Curr, out CurrPageItem);
@@ -129,19 +129,21 @@ class UITurningPage : MonoBehaviour
         ActiveGOSome(false);
         ActiveGOTemp(false);
 
-        _tranTween = transform.Find("Adapter/uiTurningPage/goTween").GetComponent<RectTransform>();
+        _tranTween = _bookRect.Find("goTween").GetComponent<RectTransform>();
         _txtPageNum = transform.Find("Adapter/txtPageNum").GetComponent<Text>();
 
         //Data
-        _bookSize = _bookRect.rect.size;
         if (isLandScape)
         {
+            AdapterUtils.Instance.SetHorizontal(transform);
             _rotQuaternion = Quaternion.identity * Quaternion.Euler(0, 0, -90);
         }
         else
         {
+            AdapterUtils.Instance.SetVertical(transform);
             _rotQuaternion = Quaternion.identity;
         }
+        _bookSize = _bookRect.rect.size;
         _globalZeroPos = Local2Global(Vector3.zero);
         _timeNum = 0;
         // Tween
@@ -158,6 +160,10 @@ class UITurningPage : MonoBehaviour
     }
     private void Update()
     {
+        Debug.DrawLine(Local2Global(lclPointElb), Local2Global(lclPointErb), Color.black, 0, false);
+        Debug.DrawLine(Local2Global(lclPointElt), Local2Global(lclPointErt), Color.black, 0, false);
+        Debug.DrawLine(Local2Global(lclPointSt), Local2Global(lclPointSb), Color.black, 0, false);
+
         Debug.DrawLine(Local2Global(_pointT2), Local2Global(_pointT1), Color.red);
         Debug.DrawLine(Local2Global(_pointPivotMask), Local2Global(_pointTmp), Color.blue);
         Debug.DrawLine(Local2Global(_pointPivotMask), Local2Global(_pointProjection), Color.green);
@@ -235,7 +241,7 @@ class UITurningPage : MonoBehaviour
 
     private RectTransform SetPage(string pageName, PageType pageType, out UIPageItem pageItem)
     {
-        RectTransform rectPage = transform.Find(string.Format("Adapter/uiTurningPage/{0}", pageName)).GetComponent<RectTransform>();
+        RectTransform rectPage = _bookRect.Find(pageName).GetComponent<RectTransform>();
         pageItem = GameObject.Instantiate<UIPageItem>(_tplPage, rectPage.transform);
         pageItem.gameObject.SetActive(true);
         pageItem.name = lclTplPage;
@@ -278,41 +284,14 @@ class UITurningPage : MonoBehaviour
         FlushPage(CurrPageItem, _curPageNum);
     }
 
-    //Tween
-    private void CompleteTween()
-    {
-        NextPage.SetParent(transform, true);
-        CurrPage.SetParent(transform, true);
-        TempPage.SetParent(transform, true);
-        TempPage.transform.localRotation = Quaternion.identity;
-        ActiveGOSome(false);
-        ActiveGOTemp(false);
-
-        bool isBack = _pointTweenTarget.x == _pointProjection.x;   //是否未翻页，而Tween回原样
-        if (!isBack)
-        {
-            if (lclFlipMode == FlipMode.Next)
-            {
-                SetCurPageNum(_curPageNum + 1);
-            }
-            else
-            {
-                SetCurPageNum(_curPageNum - 1);
-            }
-        }
-        _isTweening = false;
-    }
     private void SetCurPageNum(int curPageNum)
     {
         if (curPageNum < 1 || curPageNum > _maxPageNum)
         {
             return;
         }
-        if (curPageNum != _curPageNum)
-        {
-            _curPageNum = curPageNum;
-            _txtPageNum.text = _curPageNum.ToString();
-        }
+        _curPageNum = curPageNum;
+        _txtPageNum.text = string.Format("{0}/{1}", _curPageNum, _maxPageNum);
         UpdateCurrPageData();
     }
 
@@ -419,10 +398,8 @@ class UITurningPage : MonoBehaviour
         Quaternion p = Quaternion.FromToRotation(vY, vP1P2.normalized);
         vPP1.x = point.x - linePoint1.x;
         vPP1.y = point.y - linePoint1.y;
-        //vPP1 = Quaternion.MulVec3(q, vPP1);
         vPP1 = q * vPP1;
         vPP1.x = vY.x - vPP1.x;
-        //vPP1 = Quaternion.MulVec3(p, vPP1);
         vPP1 = p * vPP1;
         v2CalSymmetryPoint.x = vPP1.x;
         v2CalSymmetryPoint.y = vPP1.y;
@@ -555,7 +532,7 @@ class UITurningPage : MonoBehaviour
             Vector3[] v3Arr = new Vector3[count];
             for (int i = 0; i < count; i++)
             {
-                v3Arr[i] = GetQuadraticBezierPoint(_pointTouch, _pointBezier, _pointTweenTarget, i / count, false);
+                v3Arr[i] = GetQuadraticBezierPoint(_pointTouch, _pointBezier, _pointTweenTarget, i * 1.0f / count, false);
             }
             _tweener = _tranTween.DOPath(v3Arr, _tweenTime, PathType.Linear, PathMode.Full3D, 1, Color.green)
                 .OnUpdate(delegate ()
@@ -580,6 +557,29 @@ class UITurningPage : MonoBehaviour
                 _tweener.Kill(true);
             }
         }
+    }
+    private void CompleteTween()
+    {
+        NextPage.SetParent(_bookRect, true);
+        CurrPage.SetParent(_bookRect, true);
+        TempPage.SetParent(_bookRect, true);
+        TempPage.transform.localRotation = Quaternion.identity;
+        ActiveGOSome(false);
+        ActiveGOTemp(false);
+
+        bool isBack = _pointTweenTarget.x == _pointProjection.x;   //是否未翻页，而Tween回原样
+        if (!isBack)
+        {
+            if (lclFlipMode == FlipMode.Next)
+            {
+                SetCurPageNum(_curPageNum + 1);
+            }
+            else
+            {
+                SetCurPageNum(_curPageNum - 1);
+            }
+        }
+        _isTweening = false;
     }
 
     private void BeginDragInit()
@@ -648,7 +648,7 @@ class UITurningPage : MonoBehaviour
         return _curPageNum >= _maxPageNum;
     }
 
-    //Drag callback
+    #region Drag callback
     private void OnBeginDragBook(BaseEventData arg0)
     {
         _canDrag = true;
@@ -839,6 +839,7 @@ class UITurningPage : MonoBehaviour
         _tranTween.localPosition = new Vector3(_pointTmp.x, _pointTmp.y, 0);
         SetIsTweening(true);
     }
+    #endregion
 
     private void AutoFlip()   //自动翻页只有翻下一页的情况
     {

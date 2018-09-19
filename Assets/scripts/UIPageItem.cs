@@ -13,6 +13,7 @@ public class UIPageItem : MonoBehaviour
     {
         if(img == null)
         {
+            Debug.LogError(string.Format("[Error]img == null.\n{0}",transform.parent.gameObject.name));
             return;
         }
         img.texture = tex;

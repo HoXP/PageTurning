@@ -1,16 +1,10 @@
-# Unity3D Book Page Curl
-A simple unity3D package to create a "book page flip" effect using unity native 2D tools
+# 基于Unity3D的翻书效果
+使用Unity中的2D特性模拟3D“翻书效果”。
 
-![Unity3D Book Page Curl Screenshot](https://dl.dropboxusercontent.com/s/85w7gpkjqno4u3j/screanshot.png?dl=0)
-# Features:
-- Support Left to Right and Right to Left Flipping.
-- Configurable Auto Flip Option.
+
+
+## 功能:
+- 支持左右翻书。
+- 支持自动翻书。
 - Works with different Anchor sets.
 - Works with Canvas Scaler.
-
-# Documentation
-Check [Wiki](https://github.com/Dandarawy/Unity3DBookPageCurl/wiki) Section
-
-
-# Asset store
-Download the latest unity package from unity [Asset Store](http://u3d.as/odF)

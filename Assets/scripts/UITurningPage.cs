@@ -1,7 +1,9 @@
 ﻿using DG.Tweening;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 class UITurningPage : MonoBehaviour
@@ -31,6 +33,9 @@ class UITurningPage : MonoBehaviour
     private RectTransform _shadow = null;
     private RectTransform _shadowParent = null;
     private Text _txtPageNum = null;
+    private Button _btnBF = null;
+    private Button _btnZT = null;
+    private Button _btnBack = null;
     #endregion
 
     #region Data
@@ -61,8 +66,7 @@ class UITurningPage : MonoBehaviour
 
     private Vector2 _bookSize = Vector2.zero;
 
-    [SerializeField]
-    private bool isLandScape = false;
+    internal static bool isLandScape = false;
     private Quaternion _rotQuaternion = Quaternion.identity;
     private Vector3 _globalZeroPos = Vector3.zero;
 
@@ -80,6 +84,9 @@ class UITurningPage : MonoBehaviour
     private List<DeltaTime> _deltaList = null;
 
     private bool _canDrag = false;
+
+    [SerializeField]
+    private bool IsAutoPlay = false;    //是否自动播放
     #endregion
 
     #region Tween
@@ -131,6 +138,12 @@ class UITurningPage : MonoBehaviour
 
         _tranTween = _bookRect.Find("goTween").GetComponent<RectTransform>();
         _txtPageNum = transform.Find("Adapter/txtPageNum").GetComponent<Text>();
+        _btnBF = transform.Find("Adapter/btn/btnBF").GetComponent<Button>();
+        _btnBF.onClick.AddListener(OnClickBtnBF);
+        _btnZT = transform.Find("Adapter/btn/btnZT").GetComponent<Button>();
+        _btnZT.onClick.AddListener(OnClickBtnZT);
+        _btnBack = transform.Find("Adapter/btnBack").GetComponent<Button>();
+        _btnBack.onClick.AddListener(OnClickBtnBC);
 
         //Data
         if (isLandScape)
@@ -151,9 +164,11 @@ class UITurningPage : MonoBehaviour
         _isTweening = false;
         _isReachRatio = false;
 
+        FlushBtnAutoPlay(IsAutoPlay);
         LoadTextures();
         Init();
     }
+
     private void Start()
     {
         SetCurPageNum(1);
@@ -201,8 +216,8 @@ class UITurningPage : MonoBehaviour
         lclPointErb = new Vector2(_rx, _by);    //_bookRect右下顶点;
         lclPointElt = new Vector2(_lx, _ty);    //_bookRect左上顶点;
         lclPointErt = new Vector2(_rx, _ty);    //_bookRect右上顶点;
-        lclPointSt = new Vector2(_sx, _ty); //书脊上顶点;
-        lclPointSb = new Vector2(_sx, _by); //书脊下顶点;
+        lclPointSt = new Vector2(_sx, _ty);     //书脊上顶点;
+        lclPointSb = new Vector2(_sx, _by);     //书脊下顶点;
         //设置Mask大小
         float diagonal = Vector2.Distance(lclPointElt, lclPointErb);
         Vector2 size = new Vector2(2 * diagonal, 2 * diagonal);
@@ -529,8 +544,8 @@ class UITurningPage : MonoBehaviour
         if (_isTweening)
         {
             int count = 16;
-            Vector3[] v3Arr = new Vector3[count];
-            for (int i = 0; i < count; i++)
+            Vector3[] v3Arr = new Vector3[count+1];
+            for (int i = 0; i <= count; i++)
             {
                 v3Arr[i] = GetQuadraticBezierPoint(_pointTouch, _pointBezier, _pointTweenTarget, i * 1.0f / count, false);
             }
@@ -567,7 +582,7 @@ class UITurningPage : MonoBehaviour
         ActiveGOSome(false);
         ActiveGOTemp(false);
 
-        bool isBack = _pointTweenTarget.x == _pointProjection.x;   //是否未翻页，而Tween回原样
+        bool isBack = _pointTweenTarget.x == _pointProjection.x;    //是否未翻页，而Tween回原样
         if (!isBack)
         {
             if (lclFlipMode == FlipMode.Next)
@@ -580,6 +595,7 @@ class UITurningPage : MonoBehaviour
             }
         }
         _isTweening = false;
+        StartCoroutine(CoAutoPlay());
     }
 
     private void BeginDragInit()
@@ -841,17 +857,61 @@ class UITurningPage : MonoBehaviour
     }
     #endregion
 
-    private void AutoFlip()   //自动翻页只有翻下一页的情况
+    #region AutoPlay
+    private void AutoFlip() //自动翻页只有翻下一页的情况
     {
         _pointProjection.x = lclPointErt.x;
         _pointProjection.y = (_ty + _by) / 2;
         BeginDragInit();
+        _tweenTime = 1;
         _pointTweenTarget.x = -_pointProjection.x;  //左边界或上边界的中点
         _pointTweenTarget.y = _pointProjection.y;
         _pointBezier.x = _sx;   //贝塞尔点是书脊顶点
         _pointBezier.y = _ty;
         _tranTween.localPosition = new Vector3(_pointProjection.x, _pointProjection.y, 0);
         SetIsTweening(true);
+    }
+    private void OnClickBtnBF()
+    {
+        FlushBtnAutoPlay(true);
+    }
+    private void OnClickBtnZT()
+    {
+        FlushBtnAutoPlay(false);
+    }
+    private void FlushBtnAutoPlay(bool isAutoPlay)
+    {
+        IsAutoPlay = isAutoPlay;
+        if (IsAutoPlay)
+        {
+            StartCoroutine(CoAutoPlay());
+        }
+        else
+        {
+            StopCoroutine(CoAutoPlay());
+        }
+        _btnBF.gameObject.SetActive(!IsAutoPlay);
+        _btnZT.gameObject.SetActive(IsAutoPlay);
+    }
+    private IEnumerator CoAutoPlay()
+    {
+        if(IsLastPage())
+        {
+            FlushBtnAutoPlay(false);
+            yield break;
+        }
+        if (IsAutoPlay)
+        {
+            yield return new WaitForSeconds(2);
+            AutoFlip();
+        }
+    }
+    #endregion
+
+    private void OnClickBtnBC()
+    {
+        SceneManager.UnloadSceneAsync("Main");
+        SceneManager.LoadScene("Start");
     }
 }
 
@@ -866,7 +926,6 @@ enum FlipMode
     Next = 0,
     Prev = 1
 }
-
 class DeltaTime
 {
     internal float pos = 0;

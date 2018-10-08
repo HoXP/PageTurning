@@ -9,58 +9,57 @@ using UnityEngine.UI;
 class UITurningPage : MonoBehaviour
 {
     #region Const
-    private const string lclTplPage = "tplPage";
-    private float FLIP_RATIO = 0.33f;
+    private const string TplPage = "tplPage";
+    private float FLIP_RATIO = 0.33f;   //Temp页侧边中点达到底边的FLIP_RATIO，松开就翻页，否则还原
     private int FLIP_DELTA_THRESHOLD = 2000;    //翻书速度阈值
     private int TBL_DELTA_COUNT = 5;    //delta表存储的元素最大个数
     private Vector2 TWEEN_TIME_SPAN = new Vector2(0.1f, 1);
     #endregion
 
     #region UI
-    private RectTransform _bookRect = null;
-    private RectTransform CurrMask = null;
-    private RectTransform NextMask = null;
-
-    private UIPageItem _tplPage = null;
-    private RectTransform CurrPage = null;
-    private RectTransform NextPage = null;
-    private RectTransform TempPage = null;
+    private RectTransform _bookRect = null; //uiTurningPage结点；书页
+    private RectTransform CurrMask = null;  //Curr遮罩
+    private RectTransform NextMask = null;  //Next遮罩
+    private RectTransform CurrPage = null;  //Curr页
+    private RectTransform NextPage = null;  //Next页
+    private RectTransform TempPage = null;  //Temp页
+    private UIPageItem _tplPage = null; //UIPageItem模板
     private UIPageItem CurrPageItem = null;
     private UIPageItem NextPageItem = null;
     private UIPageItem TempPageItem = null;
 
     private RectTransform _tranTween = null;
-    private RectTransform _shadow = null;
-    private RectTransform _shadowParent = null;
-    private Text _txtPageNum = null;
-    private Button _btnBF = null;
-    private Button _btnZT = null;
-    private Button _btnBack = null;
+    private RectTransform _shadow = null;   //阴影
+    private RectTransform _shadowParent = null; //阴影父节点
+    private Text _txtPageNum = null;    //页码
+    private Button _btnBF = null;   //播放按钮
+    private Button _btnZT = null;   //暂停按钮
+    private Button _btnBack = null; //返回按钮
     #endregion
 
     #region Data
-    private FlipMode lclFlipMode = FlipMode.Next;    //当前翻书模式
+    private FlipMode _flipMode = FlipMode.Next;    //当前翻书模式
 
-    private Vector2 lclPointElb = Vector2.zero;
-    private Vector2 lclPointErb = Vector2.zero;
-    private Vector2 lclPointElt = Vector2.zero;
-    private Vector2 lclPointErt = Vector2.zero;
-    private Vector2 lclPointSt = Vector2.zero;
-    private Vector2 lclPointSb = Vector2.zero;
+    private Vector2 _pointLB = Vector2.zero;    //左下角
+    private Vector2 _pointRB = Vector2.zero;    //右下角
+    private Vector2 _pointLT = Vector2.zero;    //左上角
+    private Vector2 _pointRT = Vector2.zero;    //右上角
+    private Vector2 _pointST = Vector2.zero;    //书脊顶坐标
+    private Vector2 _pointSB = Vector2.zero;    //书脊底坐标
 
-    private Vector2 _pointTouch = Vector2.zero;
-    private Vector2 _pointProjection = Vector2.zero;
-    private Vector2 _pointTweenTarget = Vector2.zero;
-    private Vector2 _pointBezier = Vector2.zero;
-    private Vector2 _pointTmp = Vector2.zero;
-    private Vector2 _pointPivotTemp = Vector2.zero;
-    private Vector2 _pointPivotMask = Vector2.zero;
+    private Vector2 _pointTouch = Vector2.zero; //Touch点
+    private Vector2 _pointProjection = Vector2.zero;    //投影点
+    private Vector2 _pointTweenTarget = Vector2.zero;   //Tween的目标点
+    private Vector2 _pointBezier = Vector2.zero;    //贝塞尔点
+    private Vector2 _pointTmp = Vector2.zero;   //
+    private Vector2 _pointPivotTemp = Vector2.zero; //Temp页轴点
+    private Vector2 _pointPivotMask = Vector2.zero; //Mask页轴点
     private Vector2 _pointT1 = Vector2.zero;
     private Vector2 _pointT2 = Vector2.zero;
     private Vector2 _pointECenter = Vector2.zero;
     private Vector2 _pointTempCorner = Vector2.zero;
-    private Vector3 _maskPos = Vector3.zero;
-    private Quaternion _maskQuarternion = Quaternion.identity;
+    private Vector3 _maskPos = Vector3.zero;    //遮罩位置
+    private Quaternion _maskQuarternion = Quaternion.identity;  //遮罩旋转
     private Vector3 _tempPos = Vector3.zero;
     private Quaternion _tempQuarternion = Quaternion.identity;
 
@@ -127,7 +126,7 @@ class UITurningPage : MonoBehaviour
         CurrMask.pivot = new Vector2(1, 0.5f);
         NextMask.pivot = new Vector2(0, 0.5f);
 
-        _tplPage = _bookRect.Find(lclTplPage).gameObject.AddComponent<UIPageItem>(); ;
+        _tplPage = _bookRect.Find(TplPage).gameObject.AddComponent<UIPageItem>(); ;
         _tplPage.gameObject.SetActive(false);
 
         CurrPage = SetPage("curr", PageType.Curr, out CurrPageItem);
@@ -175,9 +174,9 @@ class UITurningPage : MonoBehaviour
     }
     private void Update()
     {
-        Debug.DrawLine(Local2Global(lclPointElb), Local2Global(lclPointErb), Color.black, 0, false);
-        Debug.DrawLine(Local2Global(lclPointElt), Local2Global(lclPointErt), Color.black, 0, false);
-        Debug.DrawLine(Local2Global(lclPointSt), Local2Global(lclPointSb), Color.black, 0, false);
+        Debug.DrawLine(Local2Global(_pointLB), Local2Global(_pointRB), Color.black, 0, false);
+        Debug.DrawLine(Local2Global(_pointLT), Local2Global(_pointRT), Color.black, 0, false);
+        Debug.DrawLine(Local2Global(_pointST), Local2Global(_pointSB), Color.black, 0, false);
 
         Debug.DrawLine(Local2Global(_pointT2), Local2Global(_pointT1), Color.red);
         Debug.DrawLine(Local2Global(_pointPivotMask), Local2Global(_pointTmp), Color.blue);
@@ -212,14 +211,14 @@ class UITurningPage : MonoBehaviour
         _ty = halfHeight;
         _by = -halfHeight;
         //
-        lclPointElb = new Vector2(_lx, _by);    //_bookRect左下顶点;
-        lclPointErb = new Vector2(_rx, _by);    //_bookRect右下顶点;
-        lclPointElt = new Vector2(_lx, _ty);    //_bookRect左上顶点;
-        lclPointErt = new Vector2(_rx, _ty);    //_bookRect右上顶点;
-        lclPointSt = new Vector2(_sx, _ty);     //书脊上顶点;
-        lclPointSb = new Vector2(_sx, _by);     //书脊下顶点;
+        _pointLB = new Vector2(_lx, _by);    //_bookRect左下顶点;
+        _pointRB = new Vector2(_rx, _by);    //_bookRect右下顶点;
+        _pointLT = new Vector2(_lx, _ty);    //_bookRect左上顶点;
+        _pointRT = new Vector2(_rx, _ty);    //_bookRect右上顶点;
+        _pointST = new Vector2(_sx, _ty);     //书脊上顶点;
+        _pointSB = new Vector2(_sx, _by);     //书脊下顶点;
         //设置Mask大小
-        float diagonal = Vector2.Distance(lclPointElt, lclPointErb);
+        float diagonal = Vector2.Distance(_pointLT, _pointRB);
         Vector2 size = new Vector2(2 * diagonal, 2 * diagonal);
         CurrMask.sizeDelta = size;
         NextMask.sizeDelta = size;
@@ -259,7 +258,7 @@ class UITurningPage : MonoBehaviour
         RectTransform rectPage = _bookRect.Find(pageName).GetComponent<RectTransform>();
         pageItem = GameObject.Instantiate<UIPageItem>(_tplPage, rectPage.transform);
         pageItem.gameObject.SetActive(true);
-        pageItem.name = lclTplPage;
+        pageItem.name = TplPage;
         return rectPage;
     }
     private void ActiveGOSome(bool isActive)
@@ -283,7 +282,7 @@ class UITurningPage : MonoBehaviour
     private void UpdateNextPageData()
     {
         int nextNum = _curPageNum;
-        if (lclFlipMode == FlipMode.Next)
+        if (_flipMode == FlipMode.Next)
         {
             nextNum = nextNum + 1;
         }
@@ -334,26 +333,26 @@ class UITurningPage : MonoBehaviour
     }
     private Vector2 CurE()
     {
-        if (lclFlipMode == FlipMode.Next)
+        if (_flipMode == FlipMode.Next)
         {
             if (IsFromUp())
             {
-                return lclPointErt;
+                return _pointRT;
             }
             else
             {
-                return lclPointErb;
+                return _pointRB;
             }
         }
         else
         {
             if (IsFromUp())
             {
-                return lclPointElt;
+                return _pointLT;
             }
             else
             {
-                return lclPointElb;
+                return _pointLB;
             }
         }
     }
@@ -361,11 +360,11 @@ class UITurningPage : MonoBehaviour
     {
         if (IsFromUp())
         {
-            return lclPointSt;
+            return _pointST;
         }
         else
         {
-            return lclPointSb;
+            return _pointSB;
         }
     }
     private float CurRadius()
@@ -386,11 +385,11 @@ class UITurningPage : MonoBehaviour
         float limitT1X = 0;
         if (IsFromUp())
         {
-            limitT1X = lclPointSt.x - (lclPointSt.y - lclPointSb.y) * (lclPointSt.x - _pointPivotMask.x) / (_pointPivotMask.y - lclPointSb.y);
+            limitT1X = _pointST.x - (_pointST.y - _pointSB.y) * (_pointST.x - _pointPivotMask.x) / (_pointPivotMask.y - _pointSB.y);
         }
         else
         {
-            limitT1X = lclPointSb.x + (lclPointSt.y - lclPointSb.y) * (_pointPivotMask.x - lclPointSb.x) / (lclPointSt.y - _pointPivotMask.y);
+            limitT1X = _pointSB.x + (_pointST.y - _pointSB.y) * (_pointPivotMask.x - _pointSB.x) / (_pointST.y - _pointPivotMask.y);
         }
         if (IsFromRight())
         {
@@ -427,7 +426,6 @@ class UITurningPage : MonoBehaviour
         Vector2 curS = CurS();
         Vector2 curE = CurE();
         float curRadius = CurRadius();
-        //
         float angleMask, angleTemp;
         //求MaskPivot
         Vector2 vST = _pointTouch - curS;   //点S到点T的向量
@@ -585,7 +583,7 @@ class UITurningPage : MonoBehaviour
         bool isBack = _pointTweenTarget.x == _pointProjection.x;    //是否未翻页，而Tween回原样
         if (!isBack)
         {
-            if (lclFlipMode == FlipMode.Next)
+            if (_flipMode == FlipMode.Next)
             {
                 SetCurPageNum(_curPageNum + 1);
             }
@@ -605,23 +603,23 @@ class UITurningPage : MonoBehaviour
         if (IsFromRight())
         {
             _pointProjection.x = _rx;
-            lclFlipMode = FlipMode.Next;
+            _flipMode = FlipMode.Next;
         }
         else
         {
             _pointProjection.x = _lx;
-            lclFlipMode = FlipMode.Prev;
+            _flipMode = FlipMode.Prev;
         }
         _pointECenter = new Vector2(CurE().x, (_ty + _by) / 2);
-        _radius1 = Vector2.Distance(_pointProjection, lclPointSb);
-        _radius2 = Vector2.Distance(_pointProjection, lclPointSt);
+        _radius1 = Vector2.Distance(_pointProjection, _pointSB);
+        _radius2 = Vector2.Distance(_pointProjection, _pointST);
         UpdateNextPageData();   //不能删，否则会出现往回翻时Temp页显示的是下一页的内容，而非上一页的内容
         //开始拖动回调，用于初始化一些数据，比如更新图片;
         CurrPage.SetParent(CurrMask, true);
         NextPage.SetParent(NextMask, true);
         TempPage.SetParent(CurrMask, true);
         _shadowParent.SetAsLastSibling();
-        if (lclFlipMode == FlipMode.Next)
+        if (_flipMode == FlipMode.Next)
         {
             TempPage.pivot = new Vector2(0, 0.5f);
         }
@@ -860,7 +858,7 @@ class UITurningPage : MonoBehaviour
     #region AutoPlay
     private void AutoFlip() //自动翻页只有翻下一页的情况
     {
-        _pointProjection.x = lclPointErt.x;
+        _pointProjection.x = _pointRT.x;
         _pointProjection.y = (_ty + _by) / 2;
         BeginDragInit();
         _tweenTime = 1;

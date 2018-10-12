@@ -65,18 +65,18 @@ class UITurningPage : MonoBehaviour
 
     private Vector2 _bookSize = Vector2.zero;
 
-    internal static bool isLandScape = false;
+    internal static bool isLandScape = true;
     private Quaternion _rotQuaternion = Quaternion.identity;
     private Vector3 _globalZeroPos = Vector3.zero;
 
     private int _timeNum = 0;
     private bool _isReachRatio = false;
 
-    private float _sx = 0;
-    private float _lx = 0;
-    private float _rx = 0;
-    private float _ty = 0;
-    private float _by = 0;
+    private float _sx = 0;  //书脊x坐标
+    private float _lx = 0;  //左边界x坐标
+    private float _rx = 0;  //右边界x坐标
+    private float _ty = 0;  //上边界y坐标
+    private float _by = 0;  //下边界y坐标
     private float _radius1 = 0;
     private float _radius2 = 0;
 
@@ -104,6 +104,7 @@ class UITurningPage : MonoBehaviour
     private void Awake()
     {
         _bookRect = transform.Find("Adapter/uiTurningPage").GetComponent<RectTransform>();
+
         #region EventTrigger
         EventTrigger et = _bookRect.gameObject.AddComponent<EventTrigger>();
         EventTrigger.Entry entry = null;
@@ -126,12 +127,12 @@ class UITurningPage : MonoBehaviour
         CurrMask.pivot = new Vector2(1, 0.5f);
         NextMask.pivot = new Vector2(0, 0.5f);
 
-        _tplPage = _bookRect.Find(TplPage).gameObject.AddComponent<UIPageItem>(); ;
+        _tplPage = _bookRect.Find(TplPage).gameObject.AddComponent<UIPageItem>(); 
         _tplPage.gameObject.SetActive(false);
 
-        CurrPage = SetPage("curr", PageType.Curr, out CurrPageItem);
-        NextPage = SetPage("next", PageType.Next, out NextPageItem);
-        TempPage = SetPage("temp", PageType.Temp, out TempPageItem);
+        CurrPage = SetPage("curr", out CurrPageItem);
+        NextPage = SetPage("next", out NextPageItem);
+        TempPage = SetPage("temp", out TempPageItem);
         ActiveGOSome(false);
         ActiveGOTemp(false);
 
@@ -143,7 +144,6 @@ class UITurningPage : MonoBehaviour
         _btnZT.onClick.AddListener(OnClickBtnZT);
         _btnBack = transform.Find("Adapter/btnBack").GetComponent<Button>();
         _btnBack.onClick.AddListener(OnClickBtnBC);
-
         //Data
         if (isLandScape)
         {
@@ -158,7 +158,7 @@ class UITurningPage : MonoBehaviour
         _bookSize = _bookRect.rect.size;
         _globalZeroPos = Local2Global(Vector3.zero);
         _timeNum = 0;
-        // Tween
+        //Tween
         _tweenTime = 0.5f;  //需计算的Tween时间
         _isTweening = false;
         _isReachRatio = false;
@@ -188,41 +188,26 @@ class UITurningPage : MonoBehaviour
 
     private void Init()
     {
-        Canvas cvs = transform.GetComponentInParent<Canvas>();
-        cvs = cvs.rootCanvas;
-        Vector2 sizeData = cvs.GetComponent<RectTransform>().sizeDelta;
+        //初始化书页各点
         float halfWidth = _bookSize.x / 2;
-        //书脊在中间
         _sx = 0;
         _lx = _sx - halfWidth;
         _rx = _sx + halfWidth;
-        //书脊在左边
-        // if isLandScape then
-        //     _sx = 0
-        //     _lx = _sx - halfWidth
-        //     _rx = _sx + halfWidth
-        // else
-        //_sx = -halfWidth
-        //     _lx = -halfWidth
-        //     _rx = halfWidth
-        // end
-
         float halfHeight = _bookSize.y / 2;
         _ty = halfHeight;
         _by = -halfHeight;
-        //
-        _pointLB = new Vector2(_lx, _by);    //_bookRect左下顶点;
-        _pointRB = new Vector2(_rx, _by);    //_bookRect右下顶点;
-        _pointLT = new Vector2(_lx, _ty);    //_bookRect左上顶点;
-        _pointRT = new Vector2(_rx, _ty);    //_bookRect右上顶点;
-        _pointST = new Vector2(_sx, _ty);     //书脊上顶点;
-        _pointSB = new Vector2(_sx, _by);     //书脊下顶点;
-        //设置Mask大小
-        float diagonal = Vector2.Distance(_pointLT, _pointRB);
+        _pointLB = new Vector2(_lx, _by);
+        _pointRB = new Vector2(_rx, _by);
+        _pointLT = new Vector2(_lx, _ty);
+        _pointRT = new Vector2(_rx, _ty);
+        _pointST = new Vector2(_sx, _ty);
+        _pointSB = new Vector2(_sx, _by);
+        //将Mask设置为边长=书页对角线长度的2倍的正方形
+        float diagonal = Vector2.Distance(_pointLT, _pointRB);  //书页对角线
         Vector2 size = new Vector2(2 * diagonal, 2 * diagonal);
         CurrMask.sizeDelta = size;
         NextMask.sizeDelta = size;
-        //shadow
+        //翻书时的阴影效果
         _shadow = transform.Find("Adapter/mskShadow/imgShadow").GetComponent<RectTransform>();
         _shadowParent = _shadow.transform.parent.GetComponent<RectTransform>();
         _shadowParent.transform.SetParent(TempPage, true);
@@ -233,7 +218,7 @@ class UITurningPage : MonoBehaviour
         _shadow.sizeDelta = new Vector2(_shadow.sizeDelta.x, size.y);
     }
     private void LoadTextures()
-    {
+    {//加载每页的纹理
         string path = "Textures/";
         if(isLandScape)
         {
@@ -253,10 +238,10 @@ class UITurningPage : MonoBehaviour
         _maxPageNum = _texList.Length;
     }
 
-    private RectTransform SetPage(string pageName, PageType pageType, out UIPageItem pageItem)
+    private RectTransform SetPage(string pageName, out UIPageItem pageItem)
     {
         RectTransform rectPage = _bookRect.Find(pageName).GetComponent<RectTransform>();
-        pageItem = GameObject.Instantiate<UIPageItem>(_tplPage, rectPage.transform);
+        pageItem = Instantiate(_tplPage, rectPage.transform);
         pageItem.gameObject.SetActive(true);
         pageItem.name = TplPage;
         return rectPage;
@@ -317,18 +302,18 @@ class UITurningPage : MonoBehaviour
         Vector3 ret = _bookRect.TransformPoint(v3Local2Global);
         return ret;
     }
-    private Vector2 Screen2Local(Vector2 screenPos, Camera cam)    //将屏幕坐标映射到transform的本地坐标; screen范围是：左下角[0, 0]，右上角[分辨率宽, 分辨率高]
-    {
+    private Vector2 Screen2Local(Vector2 screenPos, Camera cam)
+    {//将屏幕坐标映射到transform的本地坐标; screen范围是：左下角[0, 0]，右上角[分辨率宽, 分辨率高]
         Vector2 pos = Vector2.zero;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(_bookRect, screenPos, cam, out pos);
         return pos;
     }
-    private bool IsFromUp()   //是否从上部开始拖动
-    {
+    private bool IsFromUp()
+    {//是否从上部开始拖动
         return _pointProjection.y > 0;
     }
-    private bool IsFromRight()    //是否从右部开始拖动
-    {
+    private bool IsFromRight()
+    {//是否从右部开始拖动
         return _pointProjection.x > 0;
     }
     private Vector2 CurE()
@@ -404,8 +389,8 @@ class UITurningPage : MonoBehaviour
     private Vector3 vY = new Vector3(0, 1, 0);
     private Vector3 vPP1 = Vector3.zero;
     private Vector2 v2CalSymmetryPoint = Vector2.zero;
-    private Vector2 CalSymmetryPoint(Vector2 linePoint1, Vector2 linePoint2, Vector2 point) //求point关于由linePoint1和linePoint2确定的直线的对称点;
-    {
+    private Vector2 CalSymmetryPoint(Vector2 linePoint1, Vector2 linePoint2, Vector2 point)
+    {//求point关于由linePoint1和linePoint2确定的直线的对称点;
         vP1P2.x = linePoint1.x - linePoint2.x;
         vP1P2.y = linePoint1.y - linePoint2.y;
         Quaternion q = Quaternion.FromToRotation(vP1P2.normalized, vY);
@@ -667,11 +652,11 @@ class UITurningPage : MonoBehaviour
     {
         _canDrag = true;
         if (_isTweening)
-        {
+        {//正在做Tween时不允许操作
             _canDrag = false;
             return;
         }
-        SetIsTweening(false);
+        //SetIsTweening(false);
         if (arg0 == null)
         {
             return;
@@ -913,12 +898,6 @@ class UITurningPage : MonoBehaviour
     }
 }
 
-enum PageType
-{//书页类型
-    Curr = 0,
-    Next = 1,
-    Temp = 2
-}
 enum FlipMode
 {//翻书模式枚举 - Next = 下一页, Prev = 上一页
     Next = 0,

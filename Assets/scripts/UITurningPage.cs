@@ -19,7 +19,6 @@ class UITurningPage : MonoBehaviour
     #region UI
     private RectTransform _bookRect = null; //uiTurningPage结点；书页
     private RectTransform CurrMask = null;  //Curr遮罩
-    private RectTransform NextMask = null;  //Next遮罩
     private RectTransform CurrPage = null;  //Curr页
     private RectTransform NextPage = null;  //Next页
     private RectTransform TempPage = null;  //Temp页
@@ -123,9 +122,7 @@ class UITurningPage : MonoBehaviour
         #endregion
 
         CurrMask = _bookRect.Find("maskC").GetComponent<RectTransform>();
-        NextMask = _bookRect.Find("maskN").GetComponent<RectTransform>();
         CurrMask.pivot = new Vector2(1, 0.5f);
-        NextMask.pivot = new Vector2(0, 0.5f);
 
         _tplPage = _bookRect.Find(TplPage).gameObject.AddComponent<UIPageItem>(); 
         _tplPage.gameObject.SetActive(false);
@@ -208,7 +205,6 @@ class UITurningPage : MonoBehaviour
         float diagonal = Vector2.Distance(_pointLT, _pointRB);  //书页对角线
         Vector2 size = new Vector2(2 * diagonal, 2 * diagonal);
         CurrMask.sizeDelta = size;
-        NextMask.sizeDelta = size;
         //翻书时的阴影效果
         _shadow = transform.Find("Adapter/mskShadow/imgShadow").GetComponent<RectTransform>();
         _shadowParent = _shadow.transform.parent.GetComponent<RectTransform>();
@@ -251,7 +247,6 @@ class UITurningPage : MonoBehaviour
     private void ActiveGOSome(bool isActive)
     {
         CurrMask.gameObject.SetActive(isActive);
-        NextMask.gameObject.SetActive(isActive);
         NextPage.gameObject.SetActive(isActive);
     }
     private void ActiveGOTemp(bool isActive)
@@ -280,8 +275,8 @@ class UITurningPage : MonoBehaviour
         FlushPage(NextPageItem, nextNum);
         FlushPage(TempPageItem, nextNum);
     }
-    private void UpdateCurrPageData()   //更新页面数据，比如页面图片;//CurrPage 总是保持当前图片，且总是在NextPage之上;
-    {
+    private void UpdateCurrPageData()
+    {//更新页面图片;
         FlushPage(CurrPageItem, _curPageNum);
     }
 
@@ -498,12 +493,8 @@ class UITurningPage : MonoBehaviour
         Calc();
 
         SetPositionAndRotation(CurrMask, _maskPos, _maskQuarternion);
-        SetPositionAndRotation(NextMask, _maskPos, _maskQuarternion);
         SetPositionAndRotation(_shadow, _maskPos, _maskQuarternion);    //shadow
-
         SetPositionAndRotation(CurrPage, _globalZeroPos, _rotQuaternion);
-        SetPositionAndRotation(NextPage, _globalZeroPos, _rotQuaternion);
-
         SetPositionAndRotation(TempPage, _tempPos, _tempQuarternion);
 
         _timeNum = _timeNum - 1;
@@ -560,7 +551,6 @@ class UITurningPage : MonoBehaviour
     }
     private void CompleteTween()
     {
-        NextPage.SetParent(_bookRect, true);
         CurrPage.SetParent(_bookRect, true);
         TempPage.SetParent(_bookRect, true);
         TempPage.transform.localRotation = Quaternion.identity;
@@ -606,7 +596,6 @@ class UITurningPage : MonoBehaviour
         _radius2 = Vector2.Distance(_pointProjection, _pointST);
         UpdateNextPageData();   //不能删，否则会出现往回翻时Temp页显示的是下一页的内容，而非上一页的内容
         CurrPage.SetParent(CurrMask, true);
-        NextPage.SetParent(NextMask, true);
         TempPage.SetParent(CurrMask, true);
         _shadowParent.SetAsLastSibling();
         if (_flipMode == FlipMode.Next)

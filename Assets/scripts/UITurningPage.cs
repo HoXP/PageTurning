@@ -56,8 +56,8 @@ class UITurningPage : MonoBehaviour
     private Vector2 _pointPivotMask = Vector2.zero; //Mask页轴点
     private Vector2 _pointT1 = Vector2.zero;
     private Vector2 _pointT2 = Vector2.zero;
-    private Vector2 _pointECenter = Vector2.zero;
-    private Vector2 _pointTempCorner = Vector2.zero;
+    private Vector2 _pointCenter = Vector2.zero;    //当前书页左右两边的中点
+    private Vector2 _pointTempCorner = Vector2.zero;    //临时页角点
     private Vector3 _maskPos = Vector3.zero;    //遮罩位置
     private Quaternion _maskQuarternion = Quaternion.identity;  //遮罩旋转
     private Vector3 _tempPos = Vector3.zero;
@@ -174,9 +174,11 @@ class UITurningPage : MonoBehaviour
     }
     private void Update()
     {
+        Debug.DrawLine(Local2Global(_pointProjection), Local2Global(_pointST), Color.magenta);
+        Debug.DrawLine(Local2Global(_pointProjection), Local2Global(_pointSB), Color.cyan);
+
         Debug.DrawLine(Local2Global(_pointLB), Local2Global(_pointRB), Color.black, 0, false);
         Debug.DrawLine(Local2Global(_pointLT), Local2Global(_pointRT), Color.black, 0, false);
-        Debug.DrawLine(Local2Global(_pointST), Local2Global(_pointSB), Color.black, 0, false);
 
         Debug.DrawLine(Local2Global(_pointT2), Local2Global(_pointT1), Color.red);
         Debug.DrawLine(Local2Global(_pointPivotMask), Local2Global(_pointTmp), Color.blue);
@@ -296,7 +298,7 @@ class UITurningPage : MonoBehaviour
 
     private Vector3 v3Local2Global = Vector3.zero;
     private Vector3 Local2Global(Vector3 localVal)
-    {
+    {//将本地坐标转换为世界坐标
         v3Local2Global.x = localVal.x;
         v3Local2Global.y = localVal.y;
         Vector3 ret = _bookRect.TransformPoint(v3Local2Global);
@@ -316,8 +318,8 @@ class UITurningPage : MonoBehaviour
     {//是否从右部开始拖动
         return _pointProjection.x > 0;
     }
-    private Vector2 CurE()
-    {
+    private Vector2 CurC()
+    {//当前角点
         if (_flipMode == FlipMode.Next)
         {
             if (IsFromUp())
@@ -342,7 +344,7 @@ class UITurningPage : MonoBehaviour
         }
     }
     private Vector2 CurS()
-    {
+    {//当前书脊点
         if (IsFromUp())
         {
             return _pointST;
@@ -409,7 +411,7 @@ class UITurningPage : MonoBehaviour
     private void Calc()
     {
         Vector2 curS = CurS();
-        Vector2 curE = CurE();
+        Vector2 curE = CurC();
         float curRadius = CurRadius();
         float angleMask, angleTemp;
         //求MaskPivot
@@ -461,7 +463,7 @@ class UITurningPage : MonoBehaviour
         }
         angleMask = angleMask * Mathf.Rad2Deg;  //弧度变角度
         //求TempPivot
-        _pointPivotTemp = CalSymmetryPoint(_pointPivotMask, _pointT2, _pointECenter);   // Temp的pivot点坐标;
+        _pointPivotTemp = CalSymmetryPoint(_pointPivotMask, _pointT2, _pointCenter);   // Temp的pivot点坐标;
         _pointTempCorner = CalSymmetryPoint(_pointPivotMask, _pointT2, curE);   // Temp页距书脊中点最近的角点坐标;
         //求Temp角
         Vector2 vPTC = _pointPivotTemp - _pointTempCorner;
@@ -581,10 +583,11 @@ class UITurningPage : MonoBehaviour
         StartCoroutine(CoAutoPlay());
     }
 
-    private void BeginDragInit()
-    {
-        _pointTouch.x = _pointProjection.x;
-        _pointTouch.y = _pointProjection.y;
+    private void InitPointProjection()
+    {//根据touch点初始化投影点
+        // 刚开始拖动时拖拽点在左右边界上的投影点，只在开始拖动时计算一次; 用于计算radius1;
+        _pointProjection.x = _pointTouch.x;
+        _pointProjection.y = _pointTouch.y;
         if (IsFromRight())
         {
             _pointProjection.x = _rx;
@@ -595,11 +598,13 @@ class UITurningPage : MonoBehaviour
             _pointProjection.x = _lx;
             _flipMode = FlipMode.Prev;
         }
-        _pointECenter = new Vector2(CurE().x, (_ty + _by) / 2);
+    }
+    private void BeginDragInit()
+    {
+        _pointCenter = new Vector2(CurC().x, (_ty + _by) / 2);
         _radius1 = Vector2.Distance(_pointProjection, _pointSB);
         _radius2 = Vector2.Distance(_pointProjection, _pointST);
         UpdateNextPageData();   //不能删，否则会出现往回翻时Temp页显示的是下一页的内容，而非上一页的内容
-        //开始拖动回调，用于初始化一些数据，比如更新图片;
         CurrPage.SetParent(CurrMask, true);
         NextPage.SetParent(NextMask, true);
         TempPage.SetParent(CurrMask, true);
@@ -616,9 +621,9 @@ class UITurningPage : MonoBehaviour
         _timeNum = 2;
     }
 
-    private bool IsPointerIdValid(int pointerId)    //触控点是否合法，用于过滤多点触控
-    {
-        return pointerId == 0 || pointerId == -1;   //pointerId - 0第一个触控点，1第二个触控点...;-1鼠标左键-2鼠标右键-3鼠标中键
+    private bool IsPointerIdValid(int pointerId)
+    {//触控点是否合法，用于过滤多点触控；pointerId - 0第一个触控点，1第二个触控点...;-1鼠标左键-2鼠标右键-3鼠标中键
+        return pointerId == 0 || pointerId == -1;
     }
 
     private void UpdateTblDelta(float curPosX, string fromFlag)
@@ -656,7 +661,6 @@ class UITurningPage : MonoBehaviour
             _canDrag = false;
             return;
         }
-        //SetIsTweening(false);
         if (arg0 == null)
         {
             return;
@@ -666,7 +670,9 @@ class UITurningPage : MonoBehaviour
         {
             return;
         }
-        _pointProjection = Screen2Local(ped.position, ped.pressEventCamera);  // 刚开始拖动时拖拽点在左右边界上的投影点，只在开始拖动时计算一次; 用于计算radius1;
+        _pointTouch = Screen2Local(ped.position, ped.pressEventCamera);
+        InitPointProjection();
+        //判断往左划还是往右划
         bool isNext = false;
         if (isLandScape)
         {
@@ -680,22 +686,22 @@ class UITurningPage : MonoBehaviour
         bool isFirstPage = IsFirstPage();
         bool isFromRight = IsFromRight();
         if (isLastPage && isNext)
-        {
+        {//到最后一页，不允许往下翻
             _canDrag = false;
             return;
         }
         if (isFirstPage && !isNext)
-        {
+        {//到第一页，不允许往上翻
             _canDrag = false;
             return;
         }
         if (isFromRight && !isNext)
-        {
+        {//从右半页，不允许往下翻
             _canDrag = false;
             return;
         }
         if (!isFromRight && isNext)
-        {
+        {//从左半页，不允许往上翻
             _canDrag = false;
             return;
         }
@@ -841,10 +847,11 @@ class UITurningPage : MonoBehaviour
     #endregion
 
     #region AutoPlay
-    private void AutoFlip() //自动翻页只有翻下一页的情况
-    {
-        _pointProjection.x = _pointRT.x;
-        _pointProjection.y = (_ty + _by) / 2;
+    private void AutoFlip()
+    {//自动翻页只有翻下一页的情况
+        _pointTouch.x = _pointRT.x;
+        _pointTouch.y = (_ty + _by) / 2;
+        InitPointProjection();
         BeginDragInit();
         _tweenTime = 1;
         _pointTweenTarget.x = -_pointProjection.x;  //左边界或上边界的中点

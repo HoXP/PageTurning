@@ -345,6 +345,17 @@ class UITurningPage : MonoBehaviour
             return _pointSB;
         }
     }
+    private Vector2 CurOtherS()
+    {//当前书脊点
+        if (IsFromUp())
+        {
+            return _pointSB;
+        }
+        else
+        {
+            return _pointST;
+        }
+    }
     private float CurRadius()
     {
         if (IsFromUp())
@@ -356,28 +367,39 @@ class UITurningPage : MonoBehaviour
             return _radius1;
         }
     }
-
-    private float NormalizeT1X(float t1X)
+    private float CurOtherRadius()
     {
-        Vector2 curS = CurS();
-        float limitT1X = 0;
         if (IsFromUp())
         {
-            limitT1X = _pointST.x - (_pointST.y - _pointSB.y) * (_pointST.x - _pointPivotMask.x) / (_pointPivotMask.y - _pointSB.y);
+            return _radius1;
         }
         else
         {
-            limitT1X = _pointSB.x + (_pointST.y - _pointSB.y) * (_pointPivotMask.x - _pointSB.x) / (_pointST.y - _pointPivotMask.y);
-        }
-        if (IsFromRight())
-        {
-            return Mathf.Min(Mathf.Max(t1X, curS.x), limitT1X);
-        }
-        else
-        {
-            return Mathf.Max(Mathf.Min(t1X, curS.x), limitT1X);
+            return _radius2;
         }
     }
+
+    //private float NormalizeT1X(float t1X)
+    //{
+    //    Vector2 curS = CurS();
+    //    float limitT1X = 0;
+    //    if (IsFromUp())
+    //    {
+    //        limitT1X = _pointST.x - (_pointST.y - _pointSB.y) * (_pointST.x - _pointPivotMask.x) / (_pointPivotMask.y - _pointSB.y);
+    //    }
+    //    else
+    //    {
+    //        limitT1X = _pointSB.x + (_pointST.y - _pointSB.y) * (_pointPivotMask.x - _pointSB.x) / (_pointST.y - _pointPivotMask.y);
+    //    }
+    //    if (IsFromRight())
+    //    {
+    //        return Mathf.Min(Mathf.Max(t1X, curS.x), limitT1X);
+    //    }
+    //    else
+    //    {
+    //        return Mathf.Max(Mathf.Min(t1X, curS.x), limitT1X);
+    //    }
+    //}
     private Vector2 CalSymmetryPoint(Vector2 linePoint1, Vector2 linePoint2, Vector2 point)
     {//求point关于由linePoint1和linePoint2确定的直线的对称点;
         Vector3 vP1P2 = linePoint1 - linePoint2;
@@ -391,81 +413,118 @@ class UITurningPage : MonoBehaviour
         return vPP1;
     }
 
+    //private void Calc()
+    //{
+    //    Vector2 curS = CurS();
+    //    Vector2 curC = CurC();
+    //    float curRadius = CurRadius();
+    //    float angleMask, angleTemp;
+    //    //求MaskPivot
+    //    //float dTS = Vector2.Distance(_pointTouch, curS);
+    //    float sqrTS = (_pointTouch - curS).sqrMagnitude;    //替代Vector2.Distance()方法，以避免开方操作
+    //    if (sqrTS <= curRadius * curRadius)
+    //    {
+    //        _pointTmp = _pointTouch;
+    //    }
+    //    else
+    //    {
+    //        Vector2 vST = _pointTouch - curS;
+    //        _pointTmp = vST.normalized * curRadius + curS;  //书脊端点curS到Touch点的向量，其单位向量乘以curRadius，就是curS指向_pointTmp点的向量，加上curS就是对curS点做平移，得到的点就是_pointTmp点
+    //    }
+    //    _pointPivotMask = (_pointTmp + _pointProjection) / 2;
+    //    Vector2 vT0P = _pointProjection - _pointPivotMask;
+    //    float anglePT0H = Mathf.Atan2(vT0P.y, vT0P.x);
+    //    float xT1 = _pointPivotMask.x + (_pointPivotMask.y - curC.y) * Mathf.Tan(anglePT0H);
+    //    xT1 = NormalizeT1X(xT1);
+    //    float xT2 = xT1 + (curS.y + curC.y) * Mathf.Tan(anglePT0H);
+    //    if (IsFromRight())
+    //    {
+    //        xT2 = Mathf.Max(xT2, curS.x);
+    //    }
+    //    else
+    //    {
+    //        xT2 = Mathf.Min(xT2, curS.x);
+    //    }
+    //    _pointT1 = new Vector2(xT1, curS.y);
+    //    _pointT2 = new Vector2(xT2, -curS.y);
+    //    //求Mask角
+    //    Vector2 vT0T2 = _pointT2 - _pointPivotMask;
+    //    angleMask = Mathf.Atan2(vT0T2.y, vT0T2.x);
+    //    if (IsFromUp())
+    //    {
+    //        angleMask = angleMask + Mathf.PI / 2;
+    //    }
+    //    else
+    //    {
+    //        angleMask = angleMask - Mathf.PI / 2;
+    //    }
+    //    if (!IsFromRight())
+    //    {
+    //        angleMask = angleMask + Mathf.PI;
+    //    }
+    //    angleMask = angleMask * Mathf.Rad2Deg;  //弧度变角度
+    //    //求TempPivot
+    //    _pointPivotTemp = CalSymmetryPoint(_pointPivotMask, _pointT2, _pointCenter);   // Temp的pivot点坐标;
+    //    _pointTempCorner = CalSymmetryPoint(_pointPivotMask, _pointT2, curC);   // Temp页距书脊中点最近的角点坐标;
+    //    //求Temp角
+    //    Vector2 vPTC = _pointPivotTemp - _pointTempCorner;
+    //    angleTemp = Mathf.Atan2(vPTC.y, vPTC.x);
+    //    if (IsFromUp())
+    //    {
+    //        angleTemp = angleTemp + Mathf.PI / 2;
+    //    }
+    //    else
+    //    {
+    //        angleTemp = angleTemp - Mathf.PI / 2;
+    //    }
+    //    angleTemp = angleTemp * Mathf.Rad2Deg;
+    //    //result
+    //    _maskPos = Local2Global(_pointPivotMask);   //Mask position
+    //    _maskQuarternion = Quaternion.Euler(0, 0, angleMask) * _rotQuaternion;  //Mask旋转角
+    //    _tempPos = Local2Global(_pointPivotTemp);   //Temp position
+    //    _tempQuarternion = Quaternion.Euler(0, 0, angleTemp) * _rotQuaternion;  //Temp旋转角
+    //}
     private void Calc()
     {
-        Vector2 curS = CurS();
-        Vector2 curC = CurC();
-        float curRadius = CurRadius();
-        float angleMask, angleTemp;
+        //求_pointTmp
+        Vector2 curS1 = CurS();
+        Vector2 curS2 = CurOtherS();
+        float curR1 = CurRadius();
+        float curR2 = CurOtherRadius();
+        float sqrTS1 = (_pointTouch - curS1).sqrMagnitude;    //替代Vector2.Distance()方法，以避免开方操作
+        float sqrTS2 = (_pointTouch - curS2).sqrMagnitude;
+        bool b1 = sqrTS1 <= curR1 * curR1;
+        bool b2 = sqrTS2 <= curR2 * curR2;
+        if (b1 && b2)
+        {
+            _pointTmp = _pointTouch;
+        }
+        else if (!b1 && b2)
+        {
+            _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1; //书脊端点curS到Touch点的向量，其单位向量乘以curRadius，就是curS指向_pointTmp点的向量，加上curS就是对curS点做平移，得到的点就是_pointTmp点
+        }
+        else if(b1 && !b2)
+        {
+            _pointTmp = (_pointTouch - curS2).normalized * curR2 + curS2;
+        }
+        else
+        {
+            Debug.LogWarning(string.Format("### {0}{1}", b1, b2));
+        }
         //求MaskPivot
-        //float dTS = Vector2.Distance(_pointTouch, curS);
-        float sqrTS = (_pointTouch - curS).sqrMagnitude;    //替代Vector2.Distance()方法，以避免开方操作
-        if (sqrTS <= curRadius * curRadius)
-        {
-            _pointTmp.x = _pointTouch.x;
-            _pointTmp.y = _pointTouch.y;
-        }
-        else
-        {
-            Vector2 vST = _pointTouch - curS;   //点S到点T的向量
-            float angleTSH = Mathf.Atan2(vST.y, vST.x); //根据向量用反正切算出该向量与右向量之间的夹角;
-            Vector2 pointR1 = new Vector2(curRadius * Mathf.Cos(angleTSH), curRadius * Mathf.Sin(angleTSH)) + curS;
-            _pointTmp.x = pointR1.x;
-            _pointTmp.y = pointR1.y;
-        }
         _pointPivotMask = (_pointTmp + _pointProjection) / 2;
-        Vector2 vT0P = _pointProjection - _pointPivotMask;
-        float anglePT0H = Mathf.Atan2(vT0P.y, vT0P.x);
-
-        float xT1 = _pointPivotMask.x + (_pointPivotMask.y - curC.y) * Mathf.Tan(anglePT0H);
-        xT1 = NormalizeT1X(xT1);
-        float xT2 = xT1 + (curS.y + curC.y) * Mathf.Tan(anglePT0H);
-        if (IsFromRight())
-        {
-            xT2 = Mathf.Max(xT2, curS.x);
-        }
-        else
-        {
-            xT2 = Mathf.Min(xT2, curS.x);
-        }
-        _pointT1 = new Vector2(xT1, curS.y);
-        _pointT2 = new Vector2(xT2, -curS.y);
-        //求Mask角
-        Vector2 vT0T2 = _pointT2 - _pointPivotMask;
-        angleMask = Mathf.Atan2(vT0T2.y, vT0T2.x);
-        if (IsFromUp())
-        {
-            angleMask = angleMask + Mathf.PI / 2;
-        }
-        else
-        {
-            angleMask = angleMask - Mathf.PI / 2;
-        }
-        if (!IsFromRight())
-        {
-            angleMask = angleMask + Mathf.PI;
-        }
-        angleMask = angleMask * Mathf.Rad2Deg;  //弧度变角度
+        //据_pointProjection和_pointTmp之间的向量，与_pointBezier和_pointPivotMask之间的向量，互相垂直，故点积为0，来求_pointBezier的x坐标，_pointBezier的y坐标即为_pointProjection的y坐标
+        Vector2 vTP = _pointProjection - _pointTmp;
+        Vector2 pointBezier = new Vector2(_pointPivotMask.x - (_pointProjection.y - _pointPivotMask.y) * vTP.y / vTP.x, _pointProjection.y);
         //求TempPivot
-        _pointPivotTemp = CalSymmetryPoint(_pointPivotMask, _pointT2, _pointCenter);   // Temp的pivot点坐标;
-        _pointTempCorner = CalSymmetryPoint(_pointPivotMask, _pointT2, curC);   // Temp页距书脊中点最近的角点坐标;
-        //求Temp角
-        Vector2 vPTC = _pointPivotTemp - _pointTempCorner;
-        angleTemp = Mathf.Atan2(vPTC.y, vPTC.x);
-        if (IsFromUp())
-        {
-            angleTemp = angleTemp + Mathf.PI / 2;
-        }
-        else
-        {
-            angleTemp = angleTemp - Mathf.PI / 2;
-        }
-        angleTemp = angleTemp * Mathf.Rad2Deg;
-        //result
+        _pointPivotTemp = CalSymmetryPoint(_pointPivotMask, pointBezier, _pointCenter);   //Temp的pivot点坐标;
+        //求角度
+        Vector2 vTB = IsFromRight() ? pointBezier - _pointTmp : _pointTmp - pointBezier;
+        Vector2 vMP = _pointProjection - _pointPivotMask;
         _maskPos = Local2Global(_pointPivotMask);   //Mask position
-        _maskQuarternion = Quaternion.Euler(0, 0, angleMask) * _rotQuaternion;  //Mask旋转角
+        _maskQuarternion = Quaternion.FromToRotation(Vector2.right, vMP) * _rotQuaternion;  //Mask旋转角
         _tempPos = Local2Global(_pointPivotTemp);   //Temp position
-        _tempQuarternion = Quaternion.Euler(0, 0, angleTemp) * _rotQuaternion;  //Temp旋转角
+        _tempQuarternion = Quaternion.FromToRotation(Vector2.right, vTB) * _rotQuaternion;  //Temp旋转角
     }
 
     private void SetPositionAndRotation(Transform trans, Vector3 v3Pos, Quaternion qtnRot)

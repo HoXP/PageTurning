@@ -171,6 +171,9 @@ class UITurningPage : MonoBehaviour
     }
     private void Update()
     {
+        Debug.DrawLine(Local2Global(_pointTouch), Local2Global(_pointST), Color.yellow);
+        Debug.DrawLine(Local2Global(_pointTouch), Local2Global(_pointSB), Color.yellow);
+
         Debug.DrawLine(Local2Global(_pointProjection), Local2Global(_pointST), Color.magenta);
         Debug.DrawLine(Local2Global(_pointProjection), Local2Global(_pointSB), Color.cyan);
 
@@ -495,22 +498,58 @@ class UITurningPage : MonoBehaviour
         float sqrTS2 = (_pointTouch - curS2).sqrMagnitude;
         bool b1 = sqrTS1 <= curR1 * curR1;
         bool b2 = sqrTS2 <= curR2 * curR2;
+
         if (b1 && b2)
         {
             _pointTmp = _pointTouch;
         }
-        else if (!b1 && b2)
+        //else if (!b1 && b2)
+        else if (b2 && !b1)
         {
             _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1; //书脊端点curS到Touch点的向量，其单位向量乘以curRadius，就是curS指向_pointTmp点的向量，加上curS就是对curS点做平移，得到的点就是_pointTmp点
         }
-        else if(b1 && !b2)
+        else if (b1 && !b2)
         {
             _pointTmp = (_pointTouch - curS2).normalized * curR2 + curS2;
         }
         else
         {
             Debug.LogWarning(string.Format("### {0}{1}", b1, b2));
+            //if (Mathf.Abs(_pointTouch.y) > Mathf.Abs(_pointProjection.y))
+            //{
+            //    _pointTmp = (_pointTouch - curS2).normalized * curR2 + curS2;
+            //}
+            //else
+            //{
+            //    _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1;
+            //}
         }
+
+
+        //if (Mathf.Abs(_pointTouch.y) > Mathf.Abs(_pointProjection.y))
+        //{
+        //    if(b1)
+        //    {
+        //        _pointTmp = _pointTouch;
+        //    }
+        //    else
+        //    {
+        //        _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1;
+        //    }
+        //}
+        //else
+        //{
+        //    if (b2)
+        //    {
+        //        _pointTmp = _pointTouch;
+        //    }
+        //    else
+        //    {
+        //        _pointTmp = (_pointTouch - curS2).normalized * curR2 + curS2;
+        //    }
+        //}
+
+
         //求MaskPivot
         _pointPivotMask = (_pointTmp + _pointProjection) / 2;
         //据_pointProjection和_pointTmp之间的向量，与_pointBezier和_pointPivotMask之间的向量，互相垂直，故点积为0，来求_pointBezier的x坐标，_pointBezier的y坐标即为_pointProjection的y坐标

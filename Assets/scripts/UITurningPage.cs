@@ -489,37 +489,13 @@ class UITurningPage : MonoBehaviour
     //}
     private void Calc()
     {
-        if(!_bookRect.rect.Contains(_pointTouch))
+        if (!_bookRect.rect.Contains(_pointTouch))
         {
-            Vector2 pointTY = new Vector2(0, _pointTouch.y);
-            pointTY = pointTY.normalized * _pointST.y;
-            Vector2 norm = _pointTouch.normalized;
-            _pointTouch = _pointTouch.y / pointTY.y * norm;
+            _pointTouch = _pointST.y / Mathf.Abs(_pointTouch.y) * _pointTouch;
         }
-
-        //if (_pointTouch.x > _pointRB.x)
-        //{
-        //    _pointTouch.Set(_pointRB.x, _pointTouch.y);
-        //}
-        //else if (_pointTouch.x < _pointLB.x)
-        //{
-        //    _pointTouch.Set(_pointLB.x, _pointTouch.y);
-        //}
-        //if (_pointTouch.y > _pointST.y)
-        //{
-        //    _pointTouch.Set(_pointTouch.x, _pointST.y);
-        //}
-        //if (_pointTouch.y < _pointSB.y)
-        //{
-        //    _pointTouch.Set(_pointTouch.x, _pointSB.y);
-        //}
         //求_pointTmp
         Vector2 curS1 = CurS();
         Vector2 curS2 = CurOtherS();
-        //if (Mathf.Abs(_pointTouch.y) > _pointST.y)
-        //{
-        //    _pointTouch.Set(_pointTouch.x, curS1.y);
-        //}
         float curR1 = CurRadius();
         float curR2 = CurOtherRadius();
         float sqrTS1 = (_pointTouch - curS1).sqrMagnitude;    //替代Vector2.Distance()方法，以避免开方操作
@@ -551,32 +527,6 @@ class UITurningPage : MonoBehaviour
             //    _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1;
             //}
         }
-
-
-        //if (Mathf.Abs(_pointTouch.y) > Mathf.Abs(_pointProjection.y))
-        //{
-        //    if(b1)
-        //    {
-        //        _pointTmp = _pointTouch;
-        //    }
-        //    else
-        //    {
-        //        _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1;
-        //    }
-        //}
-        //else
-        //{
-        //    if (b2)
-        //    {
-        //        _pointTmp = _pointTouch;
-        //    }
-        //    else
-        //    {
-        //        _pointTmp = (_pointTouch - curS2).normalized * curR2 + curS2;
-        //    }
-        //}
-
-
         //求MaskPivot
         _pointPivotMask = (_pointTmp + _pointProjection) / 2;
         //据_pointProjection和_pointTmp之间的向量，与_pointBezier和_pointPivotMask之间的向量，互相垂直，故点积为0，来求_pointBezier的x坐标，_pointBezier的y坐标即为_pointProjection的y坐标

@@ -1,4 +1,5 @@
 ﻿using DG.Tweening;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -68,7 +69,6 @@ class UITurningPage : MonoBehaviour
     private Quaternion _rotQuaternion = Quaternion.identity;
     private Vector3 _globalZeroPos = Vector3.zero;
 
-    private int _timeNum = 0;
     private bool _isReachRatio = false;
 
     private float _sx = 0;  //书脊x坐标
@@ -121,7 +121,7 @@ class UITurningPage : MonoBehaviour
         et.triggers.Add(entry);
         #endregion
 
-        CurrMask = _bookRect.Find("maskC").GetComponent<RectTransform>();
+        CurrMask = _bookRect.Find("mask").GetComponent<RectTransform>();
         CurrMask.pivot = new Vector2(1, 0.5f);
 
         _tplPage = _bookRect.Find(TplPage).gameObject.AddComponent<UIPageItem>(); 
@@ -154,7 +154,6 @@ class UITurningPage : MonoBehaviour
         }
         _bookSize = _bookRect.rect.size;
         _globalZeroPos = Local2Global(Vector3.zero);
-        _timeNum = 0;
         //Tween
         _tweenTime = 0.5f;  //需计算的Tween时间
         _isTweening = false;
@@ -185,6 +184,19 @@ class UITurningPage : MonoBehaviour
         Debug.DrawLine(Local2Global(_pointPivotMask), Local2Global(_pointProjection), Color.green);
         Debug.DrawLine(Local2Global(_pointTmp), Local2Global(_pointBezier), Color.white);
         Debug.DrawLine(Local2Global(_pointProjection), Local2Global(_pointBezier), Color.white);
+    }
+    private void OnDestroy()
+    {
+        if(_texList != null)
+        {
+            for (int i = 0; i < _texList.Length; i++)
+            {
+                _texList[i] = null;
+            }
+            _texList = null;
+        }
+        Resources.UnloadUnusedAssets();
+        GC.Collect();
     }
     #endregion
 
@@ -381,28 +393,7 @@ class UITurningPage : MonoBehaviour
             return _radius2;
         }
     }
-
-    //private float NormalizeT1X(float t1X)
-    //{
-    //    Vector2 curS = CurS();
-    //    float limitT1X = 0;
-    //    if (IsFromUp())
-    //    {
-    //        limitT1X = _pointST.x - (_pointST.y - _pointSB.y) * (_pointST.x - _pointPivotMask.x) / (_pointPivotMask.y - _pointSB.y);
-    //    }
-    //    else
-    //    {
-    //        limitT1X = _pointSB.x + (_pointST.y - _pointSB.y) * (_pointPivotMask.x - _pointSB.x) / (_pointST.y - _pointPivotMask.y);
-    //    }
-    //    if (IsFromRight())
-    //    {
-    //        return Mathf.Min(Mathf.Max(t1X, curS.x), limitT1X);
-    //    }
-    //    else
-    //    {
-    //        return Mathf.Max(Mathf.Min(t1X, curS.x), limitT1X);
-    //    }
-    //}
+    
     private Vector2 CalSymmetryPoint(Vector2 linePoint1, Vector2 linePoint2, Vector2 point)
     {//求point关于由linePoint1和linePoint2确定的直线的对称点;
         Vector3 vP1P2 = linePoint1 - linePoint2;
@@ -415,84 +406,9 @@ class UITurningPage : MonoBehaviour
         vPP1 = vPP1 + linePoint1;
         return vPP1;
     }
-
-    //private void Calc()
-    //{
-    //    Vector2 curS = CurS();
-    //    Vector2 curC = CurC();
-    //    float curRadius = CurRadius();
-    //    float angleMask, angleTemp;
-    //    //求MaskPivot
-    //    //float dTS = Vector2.Distance(_pointTouch, curS);
-    //    float sqrTS = (_pointTouch - curS).sqrMagnitude;    //替代Vector2.Distance()方法，以避免开方操作
-    //    if (sqrTS <= curRadius * curRadius)
-    //    {
-    //        _pointTmp = _pointTouch;
-    //    }
-    //    else
-    //    {
-    //        Vector2 vST = _pointTouch - curS;
-    //        _pointTmp = vST.normalized * curRadius + curS;  //书脊端点curS到Touch点的向量，其单位向量乘以curRadius，就是curS指向_pointTmp点的向量，加上curS就是对curS点做平移，得到的点就是_pointTmp点
-    //    }
-    //    _pointPivotMask = (_pointTmp + _pointProjection) / 2;
-    //    Vector2 vT0P = _pointProjection - _pointPivotMask;
-    //    float anglePT0H = Mathf.Atan2(vT0P.y, vT0P.x);
-    //    float xT1 = _pointPivotMask.x + (_pointPivotMask.y - curC.y) * Mathf.Tan(anglePT0H);
-    //    xT1 = NormalizeT1X(xT1);
-    //    float xT2 = xT1 + (curS.y + curC.y) * Mathf.Tan(anglePT0H);
-    //    if (IsFromRight())
-    //    {
-    //        xT2 = Mathf.Max(xT2, curS.x);
-    //    }
-    //    else
-    //    {
-    //        xT2 = Mathf.Min(xT2, curS.x);
-    //    }
-    //    _pointT1 = new Vector2(xT1, curS.y);
-    //    _pointT2 = new Vector2(xT2, -curS.y);
-    //    //求Mask角
-    //    Vector2 vT0T2 = _pointT2 - _pointPivotMask;
-    //    angleMask = Mathf.Atan2(vT0T2.y, vT0T2.x);
-    //    if (IsFromUp())
-    //    {
-    //        angleMask = angleMask + Mathf.PI / 2;
-    //    }
-    //    else
-    //    {
-    //        angleMask = angleMask - Mathf.PI / 2;
-    //    }
-    //    if (!IsFromRight())
-    //    {
-    //        angleMask = angleMask + Mathf.PI;
-    //    }
-    //    angleMask = angleMask * Mathf.Rad2Deg;  //弧度变角度
-    //    //求TempPivot
-    //    _pointPivotTemp = CalSymmetryPoint(_pointPivotMask, _pointT2, _pointCenter);   // Temp的pivot点坐标;
-    //    _pointTempCorner = CalSymmetryPoint(_pointPivotMask, _pointT2, curC);   // Temp页距书脊中点最近的角点坐标;
-    //    //求Temp角
-    //    Vector2 vPTC = _pointPivotTemp - _pointTempCorner;
-    //    angleTemp = Mathf.Atan2(vPTC.y, vPTC.x);
-    //    if (IsFromUp())
-    //    {
-    //        angleTemp = angleTemp + Mathf.PI / 2;
-    //    }
-    //    else
-    //    {
-    //        angleTemp = angleTemp - Mathf.PI / 2;
-    //    }
-    //    angleTemp = angleTemp * Mathf.Rad2Deg;
-    //    //result
-    //    _maskPos = Local2Global(_pointPivotMask);   //Mask position
-    //    _maskQuarternion = Quaternion.Euler(0, 0, angleMask) * _rotQuaternion;  //Mask旋转角
-    //    _tempPos = Local2Global(_pointPivotTemp);   //Temp position
-    //    _tempQuarternion = Quaternion.Euler(0, 0, angleTemp) * _rotQuaternion;  //Temp旋转角
-    //}
+    
     private void Calc()
     {
-        if (!_bookRect.rect.Contains(_pointTouch))
-        {
-            _pointTouch = _pointST.y / Mathf.Abs(_pointTouch.y) * _pointTouch;
-        }
         //求_pointTmp
         Vector2 curS1 = CurS();
         Vector2 curS2 = CurOtherS();
@@ -507,25 +423,17 @@ class UITurningPage : MonoBehaviour
         {
             _pointTmp = _pointTouch;
         }
-        else if (b2 && !b1)
+        else if (b2)
         {
             _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1; //书脊端点curS到Touch点的向量，其单位向量乘以curRadius，就是curS指向_pointTmp点的向量，加上curS就是对curS点做平移，得到的点就是_pointTmp点
         }
-        else if (b1 && !b2)
+        else if (b1)
         {
             _pointTmp = (_pointTouch - curS2).normalized * curR2 + curS2;
         }
         else
         {
-            Debug.LogWarning(string.Format("### {0}{1}", b1, b2));
-            //if (Mathf.Abs(_pointTouch.y) > Mathf.Abs(_pointProjection.y))
-            //{
-            //    _pointTmp = (_pointTouch - curS2).normalized * curR2 + curS2;
-            //}
-            //else
-            //{
-            //    _pointTmp = (_pointTouch - curS1).normalized * curR1 + curS1;
-            //}
+            //Debug.LogWarning(string.Format("### {0}{1}", b1, b2));
         }
         //求MaskPivot
         _pointPivotMask = (_pointTmp + _pointProjection) / 2;
@@ -560,12 +468,8 @@ class UITurningPage : MonoBehaviour
         SetPositionAndRotation(_shadow, _maskPos, _maskQuarternion);    //shadow
         SetPositionAndRotation(CurrPage, _globalZeroPos, _rotQuaternion);
         SetPositionAndRotation(TempPage, _tempPos, _tempQuarternion);
-
-        _timeNum = _timeNum - 1;
-        if (_timeNum == 0)
-        {
-            ActiveGOTemp(true);
-        }
+        
+        ActiveGOTemp(true);
     }
 
     private Vector2 GetQuadraticBezierPoint(Vector2 pointA, Vector2 pointB, Vector2 pointC, float t, bool isLocal)  //获取二次贝塞尔点，t∈[0,1]
@@ -620,7 +524,6 @@ class UITurningPage : MonoBehaviour
         TempPage.transform.localRotation = Quaternion.identity;
         ActiveGOSome(false);
         ActiveGOTemp(false);
-
         bool isBack = _pointTweenTarget.x == _pointProjection.x;    //是否未翻页，而Tween回原样
         if (!isBack)
         {
@@ -671,7 +574,6 @@ class UITurningPage : MonoBehaviour
             TempPage.pivot = new Vector2(1, 0.5f);
         }
         ActiveGOSome(true);
-        _timeNum = 2;
     }
 
     private bool IsPointerIdValid(int pointerId)
@@ -821,8 +723,8 @@ class UITurningPage : MonoBehaviour
         speed = lastDelta / lastDeltaTime;
         //根据速度和书页翻的程度做处理
         float absSpeed = Mathf.Abs(speed);
-        if (absSpeed > FLIP_DELTA_THRESHOLD)//是否达到翻页速度的阈值。速度优先
-        {
+        if (absSpeed > FLIP_DELTA_THRESHOLD)
+        {//是否达到翻页速度的阈值。速度优先
             if (IsFromRight())
             {
                 isFlipOver = speed < 0;
@@ -834,10 +736,9 @@ class UITurningPage : MonoBehaviour
         }
         else
         {
-            //求Temp的pivot是否到边界比例
             _isReachRatio = false;
             if (IsFromRight())
-            {
+            {//求Temp的pivot是否到边界比例
                 if (_pointPivotTemp.x < _sx + FLIP_RATIO / 2 * _bookSize.x)
                 {
                     _isReachRatio = true;
@@ -864,8 +765,7 @@ class UITurningPage : MonoBehaviour
         {
             _pointTweenTarget.x = _sx - _pointTweenTarget.x;
             //将贝塞尔点设为另外两点的中点，这时构造出的曲线其实就是这个线段
-            _pointBezier.x = (_pointTweenTarget.x + _pointTmp.x) / 2;
-            _pointBezier.y = (_pointTweenTarget.y + _pointTmp.y) / 2;
+            _pointBezier = (_pointTweenTarget + _pointTmp) / 2;
         }
         else
         {

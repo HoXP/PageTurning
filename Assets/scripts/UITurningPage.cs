@@ -394,19 +394,6 @@ class UITurningPage : MonoBehaviour
         }
     }
     
-    private Vector2 CalSymmetryPoint(Vector2 linePoint1, Vector2 linePoint2, Vector2 point)
-    {//求point关于由linePoint1和linePoint2确定的直线的对称点;
-        Vector3 vP1P2 = linePoint1 - linePoint2;
-        Quaternion q = Quaternion.FromToRotation(vP1P2.normalized, Vector3.up);
-        Quaternion p = Quaternion.FromToRotation(Vector3.up, vP1P2.normalized);
-        Vector2 vPP1 = point - linePoint1;
-        vPP1 = q * vPP1;
-        vPP1.x = Vector3.up.x - vPP1.x;
-        vPP1 = p * vPP1;
-        vPP1 = vPP1 + linePoint1;
-        return vPP1;
-    }
-    
     private void Calc()
     {
         //求_pointTmp
@@ -418,7 +405,6 @@ class UITurningPage : MonoBehaviour
         float sqrTS2 = (_pointTouch - curS2).sqrMagnitude;
         bool b1 = sqrTS1 <= curR1 * curR1;
         bool b2 = sqrTS2 <= curR2 * curR2;
-
         if (b1 && b2)
         {
             _pointTmp = _pointTouch;
@@ -437,18 +423,13 @@ class UITurningPage : MonoBehaviour
         }
         //求MaskPivot
         _pointPivotMask = (_pointTmp + _pointProjection) / 2;
-        //据_pointProjection和_pointTmp之间的向量，与_pointBezier和_pointPivotMask之间的向量，互相垂直，故点积为0，来求_pointBezier的x坐标，_pointBezier的y坐标即为_pointProjection的y坐标
-        Vector2 vTP = _pointProjection - _pointTmp;
-        Vector2 pointBezier = new Vector2(_pointPivotMask.x - (_pointProjection.y - _pointPivotMask.y) * vTP.y / vTP.x, _pointProjection.y);
-        //求TempPivot
-        _pointPivotTemp = CalSymmetryPoint(_pointPivotMask, pointBezier, _pointCenter);   //Temp的pivot点坐标;
-        //求角度
-        Vector2 vTB = IsFromRight() ? pointBezier - _pointTmp : _pointTmp - pointBezier;
-        Vector2 vMP = _pointProjection - _pointPivotMask;
         _maskPos = Local2Global(_pointPivotMask);   //Mask position
-        _maskQuarternion = Quaternion.FromToRotation(Vector2.right, vMP) * _rotQuaternion;  //Mask旋转角
+        //求TempPivot
+        _pointPivotTemp = (Vector2)(Quaternion.AngleAxis(180, Vector3.Cross(Vector3.back, _pointProjection - _pointTmp)) * (_pointCenter - _pointPivotMask)) + _pointPivotMask;
         _tempPos = Local2Global(_pointPivotTemp);   //Temp position
-        _tempQuarternion = Quaternion.FromToRotation(Vector2.right, vTB) * _rotQuaternion;  //Temp旋转角
+        //求角度
+        _maskQuarternion = Quaternion.FromToRotation(Vector2.right, _pointProjection - _pointPivotMask) * _rotQuaternion;  //Mask旋转角
+        _tempQuarternion = Quaternion.FromToRotation(IsFromUp() ? Vector2.left : Vector2.right, Vector3.Cross(Vector3.back, _pointPivotTemp - _pointTmp)) * _rotQuaternion;  //Temp旋转角
     }
 
     private void SetPositionAndRotation(Transform trans, Vector3 v3Pos, Quaternion qtnRot)
@@ -496,8 +477,7 @@ class UITurningPage : MonoBehaviour
             _tweener = _tranTween.DOPath(v3Arr, _tweenTime, PathType.Linear, PathMode.Full3D, 1, Color.green)
                 .OnUpdate(delegate ()
                 {
-                    _pointTouch.x = _tranTween.localPosition.x;
-                    _pointTouch.y = _tranTween.localPosition.y;
+                    _pointTouch = _tranTween.localPosition;
                     UpdateBookToPoint();
                 })
                 .OnComplete(delegate ()
